@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Karaoke Video Generator</title>
+  <meta charset="UTF-8" />
+  <title>Karaoke Text Video</title>
   <style>
     body {
       margin: 0;
@@ -27,7 +27,7 @@
   </style>
 </head>
 <body>
-  <canvas id="karaokeCanvas" width="1280" height="720"></canvas>
+  <canvas id="karaokeCanvas" width="720" height="1280"></canvas>
   <button id="downloadBtn">Click Me</button>
 
   <script>
@@ -38,6 +38,8 @@
     const text = "Discover 10 ways to start a business without money";
     const words = text.split(" ");
     const fontSize = 60;
+    const maxVisible = 3;
+
     ctx.font = `${fontSize}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -51,21 +53,43 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const x = canvas.width / 2;
       const y = canvas.height / 2;
-      const displayText = words.join(" ");
-      ctx.fillStyle = 'white';
-      ctx.fillText(displayText, x, y);
 
-      const beforeText = words.slice(0, currentWordIndex).join(" ");
-      const currentWord = words[currentWordIndex] || "";
-      const beforeWidth = ctx.measureText(beforeText).width;
-      const currentWidth = ctx.measureText(currentWord).width;
+      const start = Math.max(0, currentWordIndex - 1);
+      const end = Math.min(words.length, start + maxVisible);
+      const visibleWords = words.slice(start, end);
 
-      ctx.fillStyle = 'yellow';
-      ctx.fillText(currentWord, x - ctx.measureText(displayText).width / 2 + beforeWidth + currentWidth / 2, y);
+      let totalWidth = 0;
+      const widths = visibleWords.map(word => {
+        const w = ctx.measureText(word).width;
+        totalWidth += w + 40; // add spacing
+        return w;
+      });
+
+      totalWidth -= 40; // remove last space
+      let startX = x - totalWidth / 2;
+
+      for (let i = 0; i < visibleWords.length; i++) {
+        const word = visibleWords[i];
+        const wordX = startX + widths.slice(0, i).reduce((a, b) => a + b + 40, 0);
+
+        if (start + i === currentWordIndex) {
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = 'white';
+          ctx.fillStyle = 'yellow';
+          ctx.strokeText(word, wordX, y);
+          ctx.fillText(word, wordX, y);
+        } else {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'white';
+          ctx.fillStyle = 'white';
+          ctx.strokeText(word, wordX, y);
+          ctx.fillText(word, wordX, y);
+        }
+      }
     }
 
     function startAnimation() {
-      const stream = canvas.captureStream(30); // 30 FPS
+      const stream = canvas.captureStream(30);
       mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
       mediaRecorder.ondataavailable = e => {
@@ -77,7 +101,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'karaoke_animation.webm';
+        a.download = 'karaoke_text.webm';
         a.click();
         URL.revokeObjectURL(url);
       };
@@ -90,14 +114,14 @@
         currentWordIndex++;
         if (currentWordIndex >= words.length) {
           clearInterval(animationInterval);
-          drawText(); // draw final frame
+          drawText();
           setTimeout(() => {
             mediaRecorder.stop();
-          }, 500); // allow final frame time
+          }, 500);
         } else {
           drawText();
         }
-      }, 500);
+      }, 700);
     }
 
     downloadBtn.addEventListener('click', () => {
