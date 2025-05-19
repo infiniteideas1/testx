@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Smooth Karaoke Animation</title>
+  <meta charset="UTF-8" />
+  <title>Motivational Karaoke Video</title>
   <style>
     html, body {
       margin: 0;
+      padding: 0;
       background: black;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      font-family: Arial, sans-serif;
     }
 
     canvas {
@@ -21,9 +22,17 @@
 
     button {
       margin-top: 20px;
-      padding: 12px 24px;
+      padding: 14px 28px;
       font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
+    }
+
+    @font-face {
+      font-family: 'ImpactFont';
+      src: local('Impact'), local('Arial Black'), sans-serif;
     }
   </style>
 </head>
@@ -36,91 +45,102 @@
     const ctx = canvas.getContext("2d");
     const downloadBtn = document.getElementById("downloadBtn");
 
-    const sentence = "Discover 10 ways to start a business without money";
-    const words = sentence.split(" ");
-    const fontSize = 64;
-    const durationPerWord = 1000; // ms
-    const maxVisible = 3;
+    const quotes = [
+      "Success doesn’t come from what you do occasionally. It comes from what you do consistently.",
+      "Don’t wait for opportunity. Create it.",
+      "Push yourself, because no one else is going to do it for you.",
+      "Great things never come from comfort zones.",
+      "Dream it. Wish it. Do it."
+    ];
 
-    ctx.font = `${fontSize}px Arial`;
+    const fontFamily = "Impact, Arial Black, sans-serif";
+    const fontColor = "white";
+    const karaokeColor = "yellow";
+    const fontSize = 72;
+    const fadeDuration = 1000; // in ms
+    const karaokeDuration = 3000;
+    const quoteDuration = karaokeDuration + fadeDuration + 1000;
+
+    let currentQuoteIndex = 0;
+    let animationStartTime;
+    let mediaRecorder;
+    let recordedChunks = [];
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    let animationFrameId;
-    let animationStartTime;
-    let recordedChunks = [];
-    let mediaRecorder;
-
-    function drawWords(currentTime) {
-      const elapsed = currentTime - animationStartTime;
-      const totalDuration = words.length * durationPerWord;
-
-      if (elapsed >= totalDuration) {
-        cancelAnimationFrame(animationFrameId);
-        mediaRecorder.stop();
-        return;
+    function fitFontSize(text, maxWidth, baseFontSize) {
+      let size = baseFontSize;
+      ctx.font = `bold ${size}px ${fontFamily}`;
+      while (ctx.measureText(text).width > maxWidth && size > 20) {
+        size -= 2;
+        ctx.font = `bold ${size}px ${fontFamily}`;
       }
+      return size;
+    }
 
-      const currentWordFloatIndex = elapsed / durationPerWord;
-      const wordIndex = Math.floor(currentWordFloatIndex);
-      const progress = currentWordFloatIndex - wordIndex;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+    function drawKaraokeQuote(timeElapsed) {
+      const quote = quotes[currentQuoteIndex];
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
-      const visibleStart = Math.max(0, wordIndex - 1);
-      const visibleEnd = Math.min(words.length, visibleStart + maxVisible);
-      const visibleWords = words.slice(visibleStart, visibleEnd);
+      let progress = Math.min((timeElapsed - fadeDuration) / karaokeDuration, 1);
+      const fadeProgress = Math.min(timeElapsed / fadeDuration, 1);
 
-      const spacing = 40;
-      const wordWidths = visibleWords.map(w => ctx.measureText(w).width);
-      const totalWidth = wordWidths.reduce((a, b) => a + b, 0) + spacing * (visibleWords.length - 1);
-      let startX = centerX - totalWidth / 2;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      visibleWords.forEach((word, i) => {
-        const actualIndex = visibleStart + i;
-        const wordX = startX + wordWidths.slice(0, i).reduce((a, b) => a + b + spacing, 0);
+      // Fit font dynamically
+      const dynamicFontSize = fitFontSize(quote, canvas.width * 0.9, fontSize);
+      ctx.font = `bold ${dynamicFontSize}px ${fontFamily}`;
 
-        let opacity = 1.0;
-        if (actualIndex === wordIndex) {
-          // Fade in highlight
-          ctx.save();
-          ctx.lineWidth = 5;
-          ctx.strokeStyle = `rgba(255,255,255,${1 - progress})`;
-          ctx.strokeText(word, wordX, centerY);
+      // Fade-in background text
+      ctx.save();
+      ctx.globalAlpha = fadeProgress;
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "black";
+      ctx.strokeText(quote, centerX, centerY);
+      ctx.fillStyle = fontColor;
+      ctx.fillText(quote, centerX, centerY);
+      ctx.restore();
 
-          ctx.fillStyle = `rgba(255,255,0,${progress})`;
-          ctx.fillText(word, wordX, centerY);
-          ctx.restore();
-        } else if (actualIndex === wordIndex - 1) {
-          // Fade out previous highlight
-          ctx.save();
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = "white";
-          ctx.strokeText(word, wordX, centerY);
+      // Karaoke highlight
+      const textWidth = ctx.measureText(quote).width;
+      const karaokeWidth = textWidth * progress;
 
-          ctx.fillStyle = `rgba(255,255,255,${1 - progress})`;
-          ctx.fillText(word, wordX, centerY);
-          ctx.restore();
-        } else {
-          // Normal word
-          ctx.save();
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = "white";
-          ctx.strokeText(word, wordX, centerY);
+      if (progress > 0 && progress <= 1) {
+        ctx.save();
+        ctx.rect(centerX - textWidth / 2, centerY - dynamicFontSize / 2, karaokeWidth, dynamicFontSize);
+        ctx.clip();
 
-          ctx.fillStyle = "white";
-          ctx.fillText(word, wordX, centerY);
-          ctx.restore();
-        }
-      });
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "black";
+        ctx.strokeText(quote, centerX, centerY);
 
-      animationFrameId = requestAnimationFrame(drawWords);
+        ctx.fillStyle = karaokeColor;
+        ctx.fillText(quote, centerX, centerY);
+        ctx.restore();
+      }
     }
 
-    function startAnimation() {
+    function animate(timestamp) {
+      const timeElapsed = timestamp - animationStartTime;
+
+      drawKaraokeQuote(timeElapsed);
+
+      if (timeElapsed < quoteDuration) {
+        requestAnimationFrame(animate);
+      } else {
+        currentQuoteIndex++;
+        if (currentQuoteIndex < quotes.length) {
+          animationStartTime = performance.now();
+          requestAnimationFrame(animate);
+        } else {
+          mediaRecorder.stop();
+        }
+      }
+    }
+
+    function startRecording() {
       const stream = canvas.captureStream(30);
       mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
@@ -135,18 +155,19 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "karaoke_smooth.webm";
+        a.download = "motivational_karaoke.webm";
         a.click();
         URL.revokeObjectURL(url);
       };
 
-      animationStartTime = performance.now();
       mediaRecorder.start();
-      animationFrameId = requestAnimationFrame(drawWords);
+      animationStartTime = performance.now();
+      requestAnimationFrame(animate);
     }
 
     downloadBtn.addEventListener("click", () => {
-      startAnimation();
+      currentQuoteIndex = 0;
+      startRecording();
     });
   </script>
 </body>
