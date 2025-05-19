@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Karaoke Text Video</title>
+  <meta charset="UTF-8">
+  <title>Smooth Karaoke Animation</title>
   <style>
-    body {
+    html, body {
       margin: 0;
       background: black;
-      color: white;
-      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      font-family: Arial, sans-serif;
     }
+
     canvas {
       background: black;
     }
+
     button {
       margin-top: 20px;
       padding: 12px 24px;
@@ -31,101 +32,120 @@
   <button id="downloadBtn">Click Me</button>
 
   <script>
-    const canvas = document.getElementById('karaokeCanvas');
-    const ctx = canvas.getContext('2d');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const canvas = document.getElementById("karaokeCanvas");
+    const ctx = canvas.getContext("2d");
+    const downloadBtn = document.getElementById("downloadBtn");
 
-    const text = "Discover 10 ways to start a business without money";
-    const words = text.split(" ");
-    const fontSize = 60;
+    const sentence = "Discover 10 ways to start a business without money";
+    const words = sentence.split(" ");
+    const fontSize = 64;
+    const durationPerWord = 1000; // ms
     const maxVisible = 3;
 
     ctx.font = `${fontSize}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-    let currentWordIndex = 0;
-    let animationInterval;
-    let mediaRecorder;
+    let animationFrameId;
+    let animationStartTime;
     let recordedChunks = [];
+    let mediaRecorder;
 
-    function drawText() {
+    function drawWords(currentTime) {
+      const elapsed = currentTime - animationStartTime;
+      const totalDuration = words.length * durationPerWord;
+
+      if (elapsed >= totalDuration) {
+        cancelAnimationFrame(animationFrameId);
+        mediaRecorder.stop();
+        return;
+      }
+
+      const currentWordFloatIndex = elapsed / durationPerWord;
+      const wordIndex = Math.floor(currentWordFloatIndex);
+      const progress = currentWordFloatIndex - wordIndex;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const x = canvas.width / 2;
-      const y = canvas.height / 2;
 
-      const start = Math.max(0, currentWordIndex - 1);
-      const end = Math.min(words.length, start + maxVisible);
-      const visibleWords = words.slice(start, end);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
 
-      let totalWidth = 0;
-      const widths = visibleWords.map(word => {
-        const w = ctx.measureText(word).width;
-        totalWidth += w + 40; // add spacing
-        return w;
+      const visibleStart = Math.max(0, wordIndex - 1);
+      const visibleEnd = Math.min(words.length, visibleStart + maxVisible);
+      const visibleWords = words.slice(visibleStart, visibleEnd);
+
+      const spacing = 40;
+      const wordWidths = visibleWords.map(w => ctx.measureText(w).width);
+      const totalWidth = wordWidths.reduce((a, b) => a + b, 0) + spacing * (visibleWords.length - 1);
+      let startX = centerX - totalWidth / 2;
+
+      visibleWords.forEach((word, i) => {
+        const actualIndex = visibleStart + i;
+        const wordX = startX + wordWidths.slice(0, i).reduce((a, b) => a + b + spacing, 0);
+
+        let opacity = 1.0;
+        if (actualIndex === wordIndex) {
+          // Fade in highlight
+          ctx.save();
+          ctx.lineWidth = 5;
+          ctx.strokeStyle = `rgba(255,255,255,${1 - progress})`;
+          ctx.strokeText(word, wordX, centerY);
+
+          ctx.fillStyle = `rgba(255,255,0,${progress})`;
+          ctx.fillText(word, wordX, centerY);
+          ctx.restore();
+        } else if (actualIndex === wordIndex - 1) {
+          // Fade out previous highlight
+          ctx.save();
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = "white";
+          ctx.strokeText(word, wordX, centerY);
+
+          ctx.fillStyle = `rgba(255,255,255,${1 - progress})`;
+          ctx.fillText(word, wordX, centerY);
+          ctx.restore();
+        } else {
+          // Normal word
+          ctx.save();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "white";
+          ctx.strokeText(word, wordX, centerY);
+
+          ctx.fillStyle = "white";
+          ctx.fillText(word, wordX, centerY);
+          ctx.restore();
+        }
       });
 
-      totalWidth -= 40; // remove last space
-      let startX = x - totalWidth / 2;
-
-      for (let i = 0; i < visibleWords.length; i++) {
-        const word = visibleWords[i];
-        const wordX = startX + widths.slice(0, i).reduce((a, b) => a + b + 40, 0);
-
-        if (start + i === currentWordIndex) {
-          ctx.lineWidth = 6;
-          ctx.strokeStyle = 'white';
-          ctx.fillStyle = 'yellow';
-          ctx.strokeText(word, wordX, y);
-          ctx.fillText(word, wordX, y);
-        } else {
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = 'white';
-          ctx.fillStyle = 'white';
-          ctx.strokeText(word, wordX, y);
-          ctx.fillText(word, wordX, y);
-        }
-      }
+      animationFrameId = requestAnimationFrame(drawWords);
     }
 
     function startAnimation() {
       const stream = canvas.captureStream(30);
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
 
-      mediaRecorder.ondataavailable = e => {
+      recordedChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) recordedChunks.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = 'karaoke_text.webm';
+        a.download = "karaoke_smooth.webm";
         a.click();
         URL.revokeObjectURL(url);
       };
 
+      animationStartTime = performance.now();
       mediaRecorder.start();
-      currentWordIndex = 0;
-      drawText();
-
-      animationInterval = setInterval(() => {
-        currentWordIndex++;
-        if (currentWordIndex >= words.length) {
-          clearInterval(animationInterval);
-          drawText();
-          setTimeout(() => {
-            mediaRecorder.stop();
-          }, 500);
-        } else {
-          drawText();
-        }
-      }, 700);
+      animationFrameId = requestAnimationFrame(drawWords);
     }
 
-    downloadBtn.addEventListener('click', () => {
-      recordedChunks = [];
+    downloadBtn.addEventListener("click", () => {
       startAnimation();
     });
   </script>
