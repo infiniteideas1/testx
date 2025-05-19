@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Motivational Karaoke Video</title>
+  <title>Finance Quote Karaoke</title>
   <style>
     html, body {
       margin: 0;
@@ -45,23 +45,17 @@
     const ctx = canvas.getContext("2d");
     const downloadBtn = document.getElementById("downloadBtn");
 
-    const quotes = [
-      "Success doesn’t come from what you do occasionally. It comes from what you do consistently.",
-      "Don’t wait for opportunity. Create it.",
-      "Push yourself, because no one else is going to do it for you.",
-      "Great things never come from comfort zones.",
-      "Dream it. Wish it. Do it."
-    ];
-
+    const quote = "INVEST IN YOUR\nFUTURE NOT YOUR FEARS";
     const fontFamily = "Impact";
+    const fontSize = 80;
     const fontColor = "white";
     const karaokeColor = "yellow";
-    const fontSize = 244; // 50% of 72px
-    const fadeDuration = 1000; // in ms
-    const karaokeDuration = 3000;
+    const lineSpacing = 1.4;
+    const fadeDuration = 1000;
+    const karaokeDuration = 4000;
     const quoteDuration = karaokeDuration + fadeDuration + 1000;
 
-    let currentQuoteIndex = 0;
+    const lines = quote.split("\n");
     let animationStartTime;
     let mediaRecorder;
     let recordedChunks = [];
@@ -69,58 +63,60 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    function fitFontSize(text, maxWidth, baseFontSize) {
-      let size = baseFontSize;
-      ctx.font = `bold ${size}px ${fontFamily}`;
-      while (ctx.measureText(text).width > maxWidth && size > 20) {
+    function fitFontSize(textLines, maxWidth, baseSize) {
+      let size = baseSize;
+      ctx.font = `${size}px ${fontFamily}`;
+      const longestLine = textLines.reduce((a, b) => a.length > b.length ? a : b);
+      while (ctx.measureText(longestLine).width > maxWidth && size > 20) {
         size -= 2;
-        ctx.font = `bold ${size}px ${fontFamily}`;
+        ctx.font = `${size}px ${fontFamily}`;
       }
       return size;
     }
 
     function drawKaraokeQuote(timeElapsed) {
-      const quote = quotes[currentQuoteIndex];
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
-      const padding = 60; // Prevent touching edges
-      let progress = Math.min((timeElapsed - fadeDuration) / karaokeDuration, 1);
       const fadeProgress = Math.min(timeElapsed / fadeDuration, 1);
+      const charProgress = Math.min((timeElapsed - fadeDuration) / karaokeDuration, 1);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Fit font dynamically
-      const dynamicFontSize = fitFontSize(quote, canvas.width - padding * 2, fontSize);
-      ctx.font = `bold ${dynamicFontSize}px ${fontFamily}`;
+      const fittedSize = fitFontSize(lines, canvas.width - 80, fontSize);
+      ctx.font = `bold ${fittedSize}px ${fontFamily}`;
 
-      // Fade-in background text
+      const totalHeight = lines.length * fittedSize * lineSpacing;
+      const startY = centerY - totalHeight / 2 + fittedSize / 2;
+
       ctx.save();
       ctx.globalAlpha = fadeProgress;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "black";
-      ctx.strokeText(quote, centerX, centerY);
-      ctx.fillStyle = fontColor;
-      ctx.fillText(quote, centerX, centerY);
-      ctx.restore();
 
-      // Karaoke highlight
-      const textWidth = ctx.measureText(quote).width;
-      const karaokeWidth = textWidth * progress;
+      lines.forEach((line, i) => {
+        const y = startY + i * fittedSize * lineSpacing;
 
-      if (progress > 0 && progress <= 1) {
-        ctx.save();
-        ctx.rect(centerX - textWidth / 2, centerY - dynamicFontSize / 2, karaokeWidth, dynamicFontSize);
-        ctx.clip();
-
+        // Draw full outline and base
         ctx.lineWidth = 4;
         ctx.strokeStyle = "black";
-        ctx.strokeText(quote, centerX, centerY);
+        ctx.strokeText(line, centerX, y);
+        ctx.fillStyle = fontColor;
+        ctx.fillText(line, centerX, y);
 
-        ctx.fillStyle = karaokeColor;
-        ctx.fillText(quote, centerX, centerY);
-        ctx.restore();
-      }
+        // Karaoke highlight by character
+        const totalChars = line.length;
+        const highlightCount = Math.floor(charProgress * totalChars);
+        if (highlightCount > 0) {
+          const karaokeText = line.slice(0, highlightCount);
+          ctx.save();
+          ctx.fillStyle = karaokeColor;
+          ctx.strokeStyle = "black";
+          ctx.strokeText(karaokeText, centerX, y);
+          ctx.fillText(karaokeText, centerX, y);
+          ctx.restore();
+        }
+      });
+
+      ctx.restore();
     }
 
     function animate(timestamp) {
@@ -131,13 +127,7 @@
       if (timeElapsed < quoteDuration) {
         requestAnimationFrame(animate);
       } else {
-        currentQuoteIndex++;
-        if (currentQuoteIndex < quotes.length) {
-          animationStartTime = performance.now();
-          requestAnimationFrame(animate);
-        } else {
-          mediaRecorder.stop();
-        }
+        mediaRecorder.stop();
       }
     }
 
@@ -156,7 +146,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "motivational_karaoke.webm";
+        a.download = "finance_quote_karaoke.webm";
         a.click();
         URL.revokeObjectURL(url);
       };
@@ -167,7 +157,6 @@
     }
 
     downloadBtn.addEventListener("click", () => {
-      currentQuoteIndex = 0;
       startRecording();
     });
   </script>
