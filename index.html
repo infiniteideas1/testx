@@ -7,7 +7,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      background: black;
+      background: navy;
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -17,7 +17,7 @@
     }
 
     canvas {
-      background: black;
+      background: navy;
     }
 
     button {
@@ -31,7 +31,7 @@
     }
 
     @font-face {
-      font-family: 'ImpactFont';
+      font-family: 'Impact';
       src: local('Impact'), local('Arial Black'), sans-serif;
     }
   </style>
@@ -53,10 +53,10 @@
       "Dream it. Wish it. Do it."
     ];
 
-    const fontFamily = "Impact, Arial Black, sans-serif";
+    const fontFamily = "Impact";
     const fontColor = "white";
     const karaokeColor = "yellow";
-    const fontSize = 72;
+    const fontSize = 244; // 50% of 72px
     const fadeDuration = 1000; // in ms
     const karaokeDuration = 3000;
     const quoteDuration = karaokeDuration + fadeDuration + 1000;
@@ -84,19 +84,20 @@
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
+      const padding = 60; // Prevent touching edges
       let progress = Math.min((timeElapsed - fadeDuration) / karaokeDuration, 1);
       const fadeProgress = Math.min(timeElapsed / fadeDuration, 1);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Fit font dynamically
-      const dynamicFontSize = fitFontSize(quote, canvas.width * 0.9, fontSize);
+      const dynamicFontSize = fitFontSize(quote, canvas.width - padding * 2, fontSize);
       ctx.font = `bold ${dynamicFontSize}px ${fontFamily}`;
 
       // Fade-in background text
       ctx.save();
       ctx.globalAlpha = fadeProgress;
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 4;
       ctx.strokeStyle = "black";
       ctx.strokeText(quote, centerX, centerY);
       ctx.fillStyle = fontColor;
@@ -112,7 +113,7 @@
         ctx.rect(centerX - textWidth / 2, centerY - dynamicFontSize / 2, karaokeWidth, dynamicFontSize);
         ctx.clip();
 
-        ctx.lineWidth = 6;
+        ctx.lineWidth = 4;
         ctx.strokeStyle = "black";
         ctx.strokeText(quote, centerX, centerY);
 
