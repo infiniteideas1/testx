@@ -1,164 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Finance Quote Karaoke</title>
+  <meta charset="UTF-8">
+  <title>Karaoke Text Animation</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: pink;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-
-    canvas {
       background: navy;
+      overflow: hidden;
+      height: 100%;
+      font-family: Impact, sans-serif;
     }
-
-    button {
-      margin-top: 20px;
-      padding: 14px 28px;
-      font-size: 18px;
-      font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+    #container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
     }
-
-    @font-face {
-      font-family: 'Impact';
-      src: local('Impact'), local('Arial Black'), sans-serif;
+    .word-set {
+      font-size: 8vw;
+      color: white;
+      line-height: 1.2;
+      display: flex;
+      gap: 1.5vw;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+    }
+    .word {
+      position: relative;
+      white-space: nowrap;
+    }
+    .highlight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 0%;
+      height: 100%;
+      color: yellow;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: width 0.4s linear;
     }
   </style>
 </head>
 <body>
-  <canvas id="karaokeCanvas" width="720" height="1280"></canvas>
-  <button id="downloadBtn">Click Me</button>
+  <div id="container">
+    <div id="words" class="word-set"></div>
+  </div>
 
   <script>
-    const canvas = document.getElementById("karaokeCanvas");
-    const ctx = canvas.getContext("2d");
-    const downloadBtn = document.getElementById("downloadBtn");
+    const quote = "For God so loved the world that he gave his one and only Son that whoever believes in him shall not perish but have eternal life";
+    const words = quote.split(" ");
+    const groupSize = 3;
+    const groups = [];
 
-    const quote = "INVEST IN YOUR\nFUTURE NOT YOUR FEARS, BE THE BEST OF YOURSELF IN ALL THAT YOU DO";
-    const fontFamily = "Impact";
-    const fontSize = 80;
-    const fontColor = "white";
-    const karaokeColor = "yellow";
-    const lineSpacing = 1.4;
-    const fadeDuration = 1000;
-    const karaokeDuration = 4000;
-    const quoteDuration = karaokeDuration + fadeDuration + 1000;
-
-    const lines = quote.split("\n");
-    let animationStartTime;
-    let mediaRecorder;
-    let recordedChunks = [];
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    function fitFontSize(textLines, maxWidth, baseSize) {
-      let size = baseSize;
-      ctx.font = `${size}px ${fontFamily}`;
-      const longestLine = textLines.reduce((a, b) => a.length > b.length ? a : b);
-      while (ctx.measureText(longestLine).width > maxWidth && size > 20) {
-        size -= 2;
-        ctx.font = `${size}px ${fontFamily}`;
-      }
-      return size;
+    for (let i = 0; i < words.length; i += groupSize) {
+      groups.push(words.slice(i, i + groupSize));
     }
 
-    function drawKaraokeQuote(timeElapsed) {
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+    const wordContainer = document.getElementById('words');
 
-      const fadeProgress = Math.min(timeElapsed / fadeDuration, 1);
-      const charProgress = Math.min((timeElapsed - fadeDuration) / karaokeDuration, 1);
+    async function animateText() {
+      for (let g = 0; g < groups.length; g++) {
+        wordContainer.innerHTML = '';
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+        groups[g].forEach(word => {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.innerHTML = `${word}<span class="highlight">${word}</span>`;
+          wordContainer.appendChild(span);
+        });
 
-      const fittedSize = fitFontSize(lines, canvas.width - 80, fontSize);
-      ctx.font = `bold ${fittedSize}px ${fontFamily}`;
+        await fadeIn(wordContainer);
 
-      const totalHeight = lines.length * fittedSize * lineSpacing;
-      const startY = centerY - totalHeight / 2 + fittedSize / 2;
-
-      ctx.save();
-      ctx.globalAlpha = fadeProgress;
-
-      lines.forEach((line, i) => {
-        const y = startY + i * fittedSize * lineSpacing;
-
-        // Draw full outline and base
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = "black";
-        ctx.strokeText(line, centerX, y);
-        ctx.fillStyle = fontColor;
-        ctx.fillText(line, centerX, y);
-
-        // Karaoke highlight by character
-        const totalChars = line.length;
-        const highlightCount = Math.floor(charProgress * totalChars);
-        if (highlightCount > 0) {
-          const karaokeText = line.slice(0, highlightCount);
-          ctx.save();
-          ctx.fillStyle = karaokeColor;
-          ctx.strokeStyle = "black";
-          ctx.strokeText(karaokeText, centerX, y);
-          ctx.fillText(karaokeText, centerX, y);
-          ctx.restore();
+        const highlights = wordContainer.querySelectorAll('.highlight');
+        for (let i = 0; i < highlights.length; i++) {
+          await karaokeFill(highlights[i]);
         }
-      });
 
-      ctx.restore();
-    }
-
-    function animate(timestamp) {
-      const timeElapsed = timestamp - animationStartTime;
-
-      drawKaraokeQuote(timeElapsed);
-
-      if (timeElapsed < quoteDuration) {
-        requestAnimationFrame(animate);
-      } else {
-        mediaRecorder.stop();
+        await delay(300);
+        await fadeOut(wordContainer);
       }
+
+      animateText(); // repeat
     }
 
-    function startRecording() {
-      const stream = canvas.captureStream(30);
-      mediaRecorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-
-      recordedChunks = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "finance_quote_karaoke.webm";
-        a.click();
-        URL.revokeObjectURL(url);
-      };
-
-      mediaRecorder.start();
-      animationStartTime = performance.now();
-      requestAnimationFrame(animate);
+    function karaokeFill(el) {
+      return new Promise(resolve => {
+        el.style.transition = 'none';
+        el.style.width = '0%';
+        requestAnimationFrame(() => {
+          el.style.transition = 'width 1.2s linear';
+          el.style.width = '100%';
+          setTimeout(resolve, 1200);
+        });
+      });
     }
 
-    downloadBtn.addEventListener("click", () => {
-      startRecording();
-    });
+    function fadeIn(el) {
+      return new Promise(resolve => {
+        el.style.opacity = 0;
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = 1;
+        setTimeout(resolve, 500);
+      });
+    }
+
+    function fadeOut(el) {
+      return new Promise(resolve => {
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = 0;
+        setTimeout(resolve, 500);
+      });
+    }
+
+    function delay(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+
+    animateText();
   </script>
 </body>
 </html>
