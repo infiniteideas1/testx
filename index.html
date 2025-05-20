@@ -1,131 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Karaoke Text Animation</title>
   <style>
-    body {
+    html, body {
       margin: 0;
-      background-color: navy;
-      color: white;
+      padding: 0;
+      background: navy;
+      overflow: hidden;
+      height: 100%;
       font-family: Impact, sans-serif;
-      height: 100vh;
-      overflow: hidden;
+    }
+    #container {
       display: flex;
-      align-items: center;
       justify-content: center;
-    }
-
-    .karaoke-container {
+      align-items: center;
+      height: 100vh;
       text-align: center;
-      font-size: 6vw;
-      line-height: 1.2;
-      padding: 20px;
-      width: 90vw;
-      max-width: 900px;
     }
-
-    .word {
-      display: inline-block;
-      margin: 0 10px;
-      white-space: nowrap;
-      position: relative;
-    }
-
-    .char {
-      display: inline-block;
+    .word-set {
+      font-size: 8vw;
       color: white;
+      line-height: 1.2;
+      display: flex;
+      gap: 1.5vw;
+      flex-wrap: wrap;
+      justify-content: center;
       position: relative;
     }
-
-    .char::after {
-      content: attr(data-char);
-      color: yellow;
-      position: absolute;
-      left: 0;
-      top: 0;
-      overflow: hidden;
-      width: 0;
-      transition: width 0.2s linear;
+    .word {
+      position: relative;
       white-space: nowrap;
     }
-
-    .char.filled::after {
-      width: 100%;
-    }
-
-    button {
+    .highlight {
       position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
-      font-size: 1.2em;
+      top: 0;
+      left: 0;
+      width: 0%;
+      height: 100%;
+      color: yellow;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: width 0.4s linear;
     }
   </style>
 </head>
 <body>
+  <div id="container">
+    <div id="words" class="word-set"></div>
+  </div>
 
-<div class="karaoke-container" id="karaokeText"></div>
-<button onclick="downloadWebpage()">Click to Download</button>
+  <script>
+    const quote = "For God so loved the world that he gave his one and only Son that whoever believes in him shall not perish but have eternal life";
+    const words = quote.split(" ");
+    const groupSize = 3;
+    const groups = [];
 
-<script src="https://unpkg.com/gsap@3"></script>
-<script src="https://unpkg.com/split-type"></script>
-<script>
-  const fullText = "omo see For God so loved the world that He gave His one and only Son that whoever believes in Him shall not perish but have eternal life.";
-  const words = fullText.split(" ");
-  const container = document.getElementById("karaokeText");
-  let index = 0;
+    for (let i = 0; i < words.length; i += groupSize) {
+      groups.push(words.slice(i, i + groupSize));
+    }
 
-  function showNextWords() {
-    if (index >= words.length) return;
+    const wordContainer = document.getElementById('words');
 
-    container.innerHTML = "";
-    const nextWords = words.slice(index, index + 3).join(" ");
-    const line = document.createElement("div");
-    line.classList.add("line");
-    line.textContent = nextWords;
-    container.appendChild(line);
+    async function animateText() {
+      for (let g = 0; g < groups.length; g++) {
+        wordContainer.innerHTML = '';
 
-    const splitLine = new SplitType(line, { types: 'words, chars', tagName: 'span' });
-    const chars = container.querySelectorAll('.char');
-
-    chars.forEach(char => {
-      const original = char.textContent;
-      char.setAttribute('data-char', original);
-    });
-
-    gsap.to(chars, {
-      onStart: () => {
-        chars.forEach((char, i) => {
-          setTimeout(() => {
-            char.classList.add('filled');
-          }, i * 100);
+        groups[g].forEach(word => {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.innerHTML = `${word}<span class="highlight">${word}</span>`;
+          wordContainer.appendChild(span);
         });
-      },
-      duration: 0.5,
-      onComplete: () => {
-        setTimeout(() => {
-          index += 3;
-          showNextWords();
-        }, chars.length * 100 + 400);
+
+        await fadeIn(wordContainer);
+
+        const highlights = wordContainer.querySelectorAll('.highlight');
+        for (let i = 0; i < highlights.length; i++) {
+          await karaokeFill(highlights[i]);
+        }
+
+        await delay(300);
+        await fadeOut(wordContainer);
       }
-    });
-  }
 
-  showNextWords();
+      animateText(); // repeat
+    }
 
-  function downloadWebpage() {
-    const blob = new Blob([document.documentElement.outerHTML], { type: "text/html" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "karaoke_quote.html";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-</script>
+    function karaokeFill(el) {
+      return new Promise(resolve => {
+        el.style.transition = 'none';
+        el.style.width = '0%';
+        requestAnimationFrame(() => {
+          el.style.transition = 'width 1.2s linear';
+          el.style.width = '100%';
+          setTimeout(resolve, 1200);
+        });
+      });
+    }
 
+    function fadeIn(el) {
+      return new Promise(resolve => {
+        el.style.opacity = 0;
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = 1;
+        setTimeout(resolve, 500);
+      });
+    }
+
+    function fadeOut(el) {
+      return new Promise(resolve => {
+        el.style.transition = 'opacity 0.5s ease';
+        el.style.opacity = 0;
+        setTimeout(resolve, 500);
+      });
+    }
+
+    function delay(ms) {
+      return new Promise(res => setTimeout(res, ms));
+    }
+
+    animateText();
+  </script>
 </body>
 </html>
