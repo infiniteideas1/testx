@@ -31,9 +31,13 @@
       text-align: center;
       font-size: 2em;
       font-weight: bold;
-      color: yellow;
+      color: white;
       text-shadow: 2px 2px 4px black;
       pointer-events: none;
+    }
+
+    .highlighted {
+      color: yellow;
     }
 
     .container {
@@ -63,41 +67,50 @@
     const textInput = document.getElementById("textInput");
     const caption = document.getElementById("caption");
 
-    function splitIntoChunks(text, chunkSize = 2) {
-      const words = text.trim().split(/\s+/);
-      const chunks = [];
-      for (let i = 0; i < words.length; i += chunkSize) {
-        chunks.push(words.slice(i, i + chunkSize).join(" "));
-      }
-      return chunks;
-    }
-
-    async function start() {
+    function start() {
       const fullText = textInput.value.trim();
       if (!fullText) return alert("Please enter a caption.");
-      const chunks = splitIntoChunks(fullText);
 
-      // Speak the full text
+      speechSynthesis.cancel(); // Stop any ongoing speech
+
+      const words = fullText.split(/\s+/);
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.rate = 1;
+      utterance.lang = 'en-US';
+
+      // Initial render of all words
+      caption.innerHTML = words.map((word, index) => `<span id="word-${index}">${word}</span>`).join(' ');
+
+      gsap.fromTo(caption, {opacity: 0}, {opacity: 1, duration: 0.5});
+
+      utterance.onboundary = function(event) {
+        if (event.name === "word") {
+          const charIndex = event.charIndex;
+          const spokenText = fullText.slice(0, charIndex);
+          const spokenWords = spokenText.trim().split(/\s+/).length;
+          const currentIndex = spokenWords;
+
+          // Remove highlights
+          words.forEach((_, i) => {
+            const span = document.getElementById(`word-${i}`);
+            span.classList.remove('highlighted');
+          });
+
+          // Highlight current word
+          const currentSpan = document.getElementById(`word-${currentIndex}`);
+          if (currentSpan) {
+            currentSpan.classList.add('highlighted');
+          }
+        }
+      };
+
+      utterance.onend = function() {
+        gsap.to(caption, {opacity: 0, duration: 1});
+      };
+
       speechSynthesis.speak(utterance);
-
-      const approxTime = (utterance.text.split(' ').length / 2.5) * 1000; // estimate speech time
-      const perChunkDuration = approxTime / chunks.length;
-
-      let i = 0;
-
-      async function showNext() {
-        if (i >= chunks.length) return;
-        caption.textContent = chunks[i];
-        gsap.fromTo(caption, {opacity: 0}, {opacity: 1, duration: 0.3});
-        gsap.to(caption, {opacity: 0, delay: (perChunkDuration / 1000) - 0.3, duration: 0.3});
-        i++;
-        setTimeout(showNext, perChunkDuration);
-      }
-
-      showNext();
     }
   </script>
+
 </body>
 </html>
