@@ -25,6 +25,7 @@
       max-width: 800px;
       aspect-ratio: 16 / 9;
       background: black;
+      overflow: hidden;
     }
 
     video {
@@ -35,7 +36,7 @@
 
     #caption {
       position: absolute;
-      bottom: 10%;
+      bottom: 10%; /* Place caption near the bottom */
       left: 50%;
       transform: translateX(-50%);
       width: 70%;
@@ -47,6 +48,7 @@
       line-height: 1.4em;
       font-size: 3vw;
       box-sizing: border-box;
+      z-index: 10; /* Ensure caption is on top of the video */
     }
 
     .word {
@@ -63,7 +65,7 @@
       color: yellow;
     }
 
-    /* Ensure the words break properly into two lines */
+    /* Ensure words break properly into two lines */
     .caption-line {
       display: inline-block;
       white-space: normal;
@@ -157,7 +159,6 @@
 
       return lines.join(" ");
     }
-
   </script>
 
 </body>
