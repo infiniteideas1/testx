@@ -27,13 +27,14 @@
     #caption {
       position: absolute;
       bottom: 10%;
-      width: 100%;
+      width: 90%;
       text-align: center;
-      font-size: 2em;
+      font-size: 3em;
       font-weight: bold;
       color: white;
-      text-shadow: 2px 2px 4px black;
+      text-shadow: 2px 2px 6px black;
       pointer-events: none;
+      line-height: 1.4em;
     }
 
     .highlighted {
@@ -48,9 +49,9 @@
 </head>
 <body>
 
-  <h1>Mini CapCut Karaoke Captions</h1>
+  <h1>CapCut Style Chunked Karaoke Captions</h1>
   <div class="controls">
-    <input type="text" id="textInput" placeholder="Enter your caption..." size="40" />
+    <input type="text" id="textInput" placeholder="Enter your caption..." size="50" />
     <button onclick="start()">Play Karaoke</button>
   </div>
 
@@ -67,45 +68,68 @@
     const textInput = document.getElementById("textInput");
     const caption = document.getElementById("caption");
 
+    function chunkWords(words, size = 4) {
+      const chunks = [];
+      for (let i = 0; i < words.length; i += size) {
+        chunks.push(words.slice(i, i + size));
+      }
+      return chunks;
+    }
+
     function start() {
       const fullText = textInput.value.trim();
       if (!fullText) return alert("Please enter a caption.");
 
-      speechSynthesis.cancel(); // Stop any ongoing speech
+      speechSynthesis.cancel();
 
       const words = fullText.split(/\s+/);
+      const chunks = chunkWords(words, 3 + Math.floor(Math.random() * 2)); // 3 to 4 words
+
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.rate = 1;
       utterance.lang = 'en-US';
 
-      // Initial render of all words
-      caption.innerHTML = words.map((word, index) => `<span id="word-${index}">${word}</span>`).join(' ');
+      let wordIndex = 0;
+      let currentChunkIndex = -1;
 
-      gsap.fromTo(caption, {opacity: 0}, {opacity: 1, duration: 0.5});
+      function updateChunkDisplay(chunkIndex) {
+        if (chunkIndex >= chunks.length) return;
+
+        const chunk = chunks[chunkIndex];
+        caption.innerHTML = chunk.map((word, i) => `<span id="word-${chunkIndex}-${i}">${word}</span>`).join(" ");
+        gsap.fromTo(caption, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      }
 
       utterance.onboundary = function(event) {
         if (event.name === "word") {
-          const charIndex = event.charIndex;
-          const spokenText = fullText.slice(0, charIndex);
-          const spokenWords = spokenText.trim().split(/\s+/).length;
-          const currentIndex = spokenWords;
+          const spokenText = fullText.slice(0, event.charIndex);
+          wordIndex = spokenText.trim().split(/\s+/).length;
 
-          // Remove highlights
-          words.forEach((_, i) => {
-            const span = document.getElementById(`word-${i}`);
-            span.classList.remove('highlighted');
-          });
+          // Determine which chunk the current word belongs to
+          let chunkStart = 0;
+          for (let i = 0; i < chunks.length; i++) {
+            const chunkSize = chunks[i].length;
+            if (wordIndex <= chunkStart + chunkSize) {
+              if (i !== currentChunkIndex) {
+                currentChunkIndex = i;
+                updateChunkDisplay(i);
+              }
 
-          // Highlight current word
-          const currentSpan = document.getElementById(`word-${currentIndex}`);
-          if (currentSpan) {
-            currentSpan.classList.add('highlighted');
+              // Highlight the correct word
+              const wordInChunk = wordIndex - chunkStart - 1;
+              chunks[i].forEach((_, j) => {
+                const span = document.getElementById(`word-${i}-${j}`);
+                if (span) span.classList.toggle("highlighted", j === wordInChunk);
+              });
+              break;
+            }
+            chunkStart += chunks[i].length;
           }
         }
       };
 
       utterance.onend = function() {
-        gsap.to(caption, {opacity: 0, duration: 1});
+        gsap.to(caption, { opacity: 0, duration: 1 });
       };
 
       speechSynthesis.speak(utterance);
