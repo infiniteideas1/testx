@@ -1,127 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Karaoke Text Animation</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Caption Video Overlay</title>
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      background: navy;
-      overflow: hidden;
-      height: 100%;
-      font-family: Impact, sans-serif;
-    }
-    #container {
+      background: #000;
+      font-family: sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      height: 100vh;
+      color: white;
+    }
+    video {
+      width: 80%;
+      margin-top: 20px;
+    }
+    #caption {
+      position: absolute;
+      bottom: 10%;
+      width: 100%;
+      text-align: center;
+      font-size: 2em;
+      font-weight: bold;
+      color: yellow;
+      text-shadow: 2px 2px 4px black;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .controls {
+      margin: 20px;
       text-align: center;
     }
-    .word-set {
-      font-size: 10vw;
-      color: white;
-      line-height: 1.2;
-      display: flex;
-      gap: 1.5vw;
-      flex-wrap: wrap;
-      justify-content: center;
-      position: relative;
-    }
-    .word {
-      position: relative;
-      white-space: nowrap;
-    }
-    .highlight {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 0%;
-      height: 100%;
-      color: yellow;
-      overflow: hidden;
-      white-space: nowrap;
-      transition: width 0.4s linear;
+    canvas {
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <div id="words" class="word-set"></div>
+
+  <h1>Mini CapCut Clone (Free Version)</h1>
+  <div class="controls">
+    <input type="text" id="textInput" placeholder="Enter your caption..." size="40" />
+    <button onclick="start()">Play & Animate</button>
+    <button onclick="download()">Download Video</button>
   </div>
 
+  <video id="video" autoplay muted loop>
+    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    Your browser does not support HTML video.
+  </video>
+  
+  <div id="caption"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
   <script>
-    const quote = "For God so loved the world that he gave his one and only Son that whoever believes in him shall not perish but have eternal life";
-    const words = quote.split(" ");
-    const groupSize = 3;
-    const groups = [];
+    const caption = document.getElementById("caption");
+    const input = document.getElementById("textInput");
+    const video = document.getElementById("video");
 
-    for (let i = 0; i < words.length; i += groupSize) {
-      groups.push(words.slice(i, i + groupSize));
+    let recordedChunks = [];
+    let mediaRecorder;
+
+    async function start() {
+      const text = input.value.trim();
+      if (!text) return alert("Please enter some text");
+
+      // Animate caption
+      caption.textContent = text;
+      caption.style.opacity = 0;
+      gsap.fromTo("#caption", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1 });
+
+      // Speak the text
+      const utterance = new SpeechSynthesisUtterance(text);
+      speechSynthesis.speak(utterance);
+
+      // Record screen
+      await recordStart();
+
+      // Stop recording when TTS ends
+      utterance.onend = () => {
+        setTimeout(() => {
+          recordStop();
+        }, 500);
+      };
     }
 
-    const wordContainer = document.getElementById('words');
+    async function recordStart() {
+      const stream = document.body.captureStream(30);
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
 
-    async function animateText() {
-      for (let g = 0; g < groups.length; g++) {
-        wordContainer.innerHTML = '';
+      mediaRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
 
-        groups[g].forEach(word => {
-          const span = document.createElement('span');
-          span.className = 'word';
-          span.innerHTML = `${word}<span class="highlight">${word}</span>`;
-          wordContainer.appendChild(span);
-        });
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = "captioned-video.webm";
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      };
 
-        await fadeIn(wordContainer);
+      mediaRecorder.start();
+    }
 
-        const highlights = wordContainer.querySelectorAll('.highlight');
-        for (let i = 0; i < highlights.length; i++) {
-          await karaokeFill(highlights[i]);
-        }
-
-        await delay(300);
-        await fadeOut(wordContainer);
+    function recordStop() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
       }
-
-      animateText(); // repeat
     }
 
-    function karaokeFill(el) {
-      return new Promise(resolve => {
-        el.style.transition = 'none';
-        el.style.width = '0%';
-        requestAnimationFrame(() => {
-          el.style.transition = 'width 1.2s linear';
-          el.style.width = '100%';
-          setTimeout(resolve, 1200);
-        });
-      });
+    function download() {
+      alert("Play your caption with the button first. It will auto-download.");
     }
-
-    function fadeIn(el) {
-      return new Promise(resolve => {
-        el.style.opacity = 0;
-        el.style.transition = 'opacity 0.5s ease';
-        el.style.opacity = 1;
-        setTimeout(resolve, 500);
-      });
-    }
-
-    function fadeOut(el) {
-      return new Promise(resolve => {
-        el.style.transition = 'opacity 0.5s ease';
-        el.style.opacity = 0;
-        setTimeout(resolve, 500);
-      });
-    }
-
-    function delay(ms) {
-      return new Promise(res => setTimeout(res, ms));
-    }
-
-    animateText();
   </script>
 </body>
 </html>
