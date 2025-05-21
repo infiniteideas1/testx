@@ -13,6 +13,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      height: 100vh; /* Full viewport height */
+      justify-content: center; /* Center vertically */
     }
 
     .controls {
@@ -25,7 +27,6 @@
       max-width: 800px;
       aspect-ratio: 16 / 9;
       background: black;
-      overflow: hidden;
     }
 
     video {
@@ -48,7 +49,7 @@
       line-height: 1.4em;
       font-size: 3vw;
       box-sizing: border-box;
-      z-index: 10; /* Ensure caption is on top of the video */
+      z-index: 10;
     }
 
     .word {
@@ -65,7 +66,6 @@
       color: yellow;
     }
 
-    /* Ensure words break properly into two lines */
     .caption-line {
       display: inline-block;
       white-space: normal;
@@ -116,7 +116,7 @@
         words.forEach((_, i) => {
           const wordEl = document.getElementById(`word-${i}`);
           if (wordEl) {
-            wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 4); // Show 3-4 words
+            wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 4); // Show 3-4 words at a time
             wordEl.classList.toggle("highlighted", i === currentWordIndex); // Highlight the current word
           }
         });
@@ -134,30 +134,26 @@
       speechSynthesis.speak(utterance);
     }
 
-    // Function to create the caption HTML structure
+    // Function to create the caption HTML structure (static 2 lines)
     function createCaptionHTML(words) {
       let lines = [];
-      let line = [];
-      let wordCount = 0;
+      let line1 = [];
+      let line2 = [];
 
+      // Split the words into two lines (for display purposes)
       words.forEach((word, index) => {
-        line.push(`<span id="word-${index}" class="word">${word}</span>`);
-        wordCount++;
-        
-        // Break into a new line after every 4 words (you can adjust this number)
-        if (wordCount >= 4) {
-          lines.push(`<div class="caption-line">${line.join(" ")}</div>`);
-          line = [];
-          wordCount = 0;
+        if (line1.length < 4) {
+          line1.push(`<span id="word-${index}" class="word">${word}</span>`);
+        } else if (line2.length < 4) {
+          line2.push(`<span id="word-${index}" class="word">${word}</span>`);
         }
       });
 
-      // Push any remaining words that didn't fill a line
-      if (line.length) {
-        lines.push(`<div class="caption-line">${line.join(" ")}</div>`);
-      }
+      // Combine both lines
+      lines.push(`<div class="caption-line">${line1.join(" ")}</div>`);
+      lines.push(`<div class="caption-line">${line2.join(" ")}</div>`);
 
-      return lines.join(" ");
+      return lines.join("");
     }
   </script>
 
