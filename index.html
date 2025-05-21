@@ -19,26 +19,34 @@
       margin: 20px;
     }
 
-    video {
-      width: 80%;
-      margin-top: 10px;
-    }
-
     .container {
       position: relative;
-      display: inline-block;
+      width: 80%;
+      max-width: 800px;
+      aspect-ratio: 16 / 9;
+      background: black;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     #caption {
       position: absolute;
+      bottom: 10%;
+      left: 0;
+      width: 100%;
       text-align: center;
       font-weight: bold;
       color: white;
       text-shadow: 2px 2px 6px black;
       pointer-events: none;
       line-height: 1.4em;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
+      padding: 0 10px;
+      box-sizing: border-box;
+      font-size: 2vw;
     }
 
     .word {
@@ -77,17 +85,6 @@
 
     let words = [];
 
-    function adjustCaptionToVideo() {
-      const rect = video.getBoundingClientRect();
-
-      // Set caption size and position dynamically based on video size
-      caption.style.left = rect.left + "px";
-      caption.style.top = (rect.top + rect.height * 0.8) + "px"; // 80% height (near bottom)
-      caption.style.width = rect.width + "px";
-      caption.style.fontSize = (rect.width * 0.05) + "px"; // font size ~5% of video width
-      caption.style.position = 'absolute';
-    }
-
     function start() {
       const fullText = textInput.value.trim();
       if (!fullText) return alert("Please enter a caption.");
@@ -95,8 +92,6 @@
       speechSynthesis.cancel();
       words = fullText.split(/\s+/);
       caption.innerHTML = words.map((word, i) => `<span id="word-${i}" class="word">${word}</span>`).join(" ");
-
-      adjustCaptionToVideo(); // initial positioning
 
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.rate = 1;
@@ -111,7 +106,6 @@
         words.forEach((_, i) => {
           const wordEl = document.getElementById(`word-${i}`);
           if (wordEl) {
-            // Show a moving window of 3 words
             wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 3);
             wordEl.classList.toggle("highlighted", i === currentWordIndex);
           }
@@ -129,11 +123,6 @@
 
       speechSynthesis.speak(utterance);
     }
-
-    // Adjust caption whenever video size changes
-    window.addEventListener('resize', adjustCaptionToVideo);
-    video.addEventListener('loadedmetadata', adjustCaptionToVideo);
-    video.addEventListener('play', adjustCaptionToVideo);
   </script>
 
 </body>
