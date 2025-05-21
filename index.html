@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Responsive Smart Karaoke Captions</title>
+  <title>Fixed 2-Line Karaoke Captions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
     body {
@@ -13,8 +13,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      height: 100vh; /* Full viewport height */
-      justify-content: center; /* Center vertically */
+      height: 100vh;
+      justify-content: center;
     }
 
     .controls {
@@ -27,6 +27,7 @@
       max-width: 800px;
       aspect-ratio: 16 / 9;
       background: black;
+      overflow: hidden;
     }
 
     video {
@@ -37,9 +38,9 @@
 
     #caption {
       position: absolute;
-      bottom: 10%; /* Place caption near the bottom */
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate(-50%, -50%);
       width: 70%;
       text-align: center;
       font-weight: bold;
@@ -47,9 +48,13 @@
       text-shadow: 2px 2px 6px black;
       pointer-events: none;
       line-height: 1.4em;
-      font-size: 3vw;
-      box-sizing: border-box;
+      font-size: 2.5vw;
       z-index: 10;
+    }
+
+    .caption-line {
+      display: block;
+      height: 1.5em;
     }
 
     .word {
@@ -65,16 +70,11 @@
     .highlighted {
       color: yellow;
     }
-
-    .caption-line {
-      display: inline-block;
-      white-space: normal;
-    }
   </style>
 </head>
 <body>
 
-  <h1>Responsive CapCut-Style Captions</h1>
+  <h1>2-Line Centered Captions</h1>
   <div class="controls">
     <input type="text" id="textInput" placeholder="Enter your caption..." size="60" />
     <button onclick="start()">Play Karaoke</button>
@@ -84,76 +84,96 @@
     <video id="video" autoplay muted loop>
       <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
     </video>
-    <div id="caption"></div>
+    <div id="caption">
+      <div class="caption-line" id="line1"></div>
+      <div class="caption-line" id="line2"></div>
+    </div>
   </div>
 
   <script>
     const textInput = document.getElementById("textInput");
-    const caption = document.getElementById("caption");
-    const video = document.getElementById("video");
+    const line1 = document.getElementById("line1");
+    const line2 = document.getElementById("line2");
 
     let words = [];
+    let blockIndex = 0;
+    let currentUtterance;
+    let currentWordIndex = 0;
+    let wordSpans = [];
 
-    // Function to start the karaoke caption display
+    function splitIntoBlocks(words, size = 6) {
+      const blocks = [];
+      for (let i = 0; i < words.length; i += size) {
+        blocks.push(words.slice(i, i + size));
+      }
+      return blocks;
+    }
+
+    function renderBlock(blockWords, offset) {
+      line1.innerHTML = "";
+      line2.innerHTML = "";
+
+      wordSpans = [];
+
+      blockWords.forEach((word, i) => {
+        const span = document.createElement("span");
+        span.textContent = word + " ";
+        span.id = `word-${offset + i}`;
+        span.className = "word";
+        if (i < 3) {
+          line1.appendChild(span);
+        } else {
+          line2.appendChild(span);
+        }
+        wordSpans.push(span);
+      });
+    }
+
     function start() {
       const fullText = textInput.value.trim();
       if (!fullText) return alert("Please enter a caption.");
 
-      speechSynthesis.cancel();
+      if (speechSynthesis.speaking) speechSynthesis.cancel();
+
       words = fullText.split(/\s+/);
-      caption.innerHTML = createCaptionHTML(words);  // Create the HTML structure for captions
+      const blocks = splitIntoBlocks(words, 6);
+      blockIndex = 0;
+      currentWordIndex = 0;
 
-      const utterance = new SpeechSynthesisUtterance(fullText);
-      utterance.rate = 1;
-      utterance.lang = 'en-US';
+      renderBlock(blocks[0], 0);
 
-      utterance.onboundary = function(event) {
+      currentUtterance = new SpeechSynthesisUtterance(fullText);
+      currentUtterance.rate = 1;
+      currentUtterance.lang = 'en-US';
+
+      currentUtterance.onboundary = function(event) {
         if (event.name !== "word") return;
 
         const spokenText = fullText.slice(0, event.charIndex);
-        const currentWordIndex = spokenText.trim().split(/\s+/).length - 1;
+        const wordIndex = spokenText.trim().split(/\s+/).length - 1;
+        currentWordIndex = wordIndex;
 
-        words.forEach((_, i) => {
-          const wordEl = document.getElementById(`word-${i}`);
-          if (wordEl) {
-            wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 4); // Show 3-4 words at a time
-            wordEl.classList.toggle("highlighted", i === currentWordIndex); // Highlight the current word
-          }
-        });
-      };
+        const currentBlock = Math.floor(wordIndex / 6);
+        const blockOffset = currentBlock * 6;
+        const wordInBlock = wordIndex % 6;
 
-      utterance.onend = function() {
-        words.forEach((_, i) => {
-          const wordEl = document.getElementById(`word-${i}`);
-          if (wordEl) {
-            wordEl.classList.remove("highlighted", "visible");
-          }
-        });
-      };
-
-      speechSynthesis.speak(utterance);
-    }
-
-    // Function to create the caption HTML structure (static 2 lines)
-    function createCaptionHTML(words) {
-      let lines = [];
-      let line1 = [];
-      let line2 = [];
-
-      // Split the words into two lines (for display purposes)
-      words.forEach((word, index) => {
-        if (line1.length < 4) {
-          line1.push(`<span id="word-${index}" class="word">${word}</span>`);
-        } else if (line2.length < 4) {
-          line2.push(`<span id="word-${index}" class="word">${word}</span>`);
+        if (currentBlock !== blockIndex && currentBlock < blocks.length) {
+          blockIndex = currentBlock;
+          renderBlock(blocks[blockIndex], blockOffset);
         }
-      });
 
-      // Combine both lines
-      lines.push(`<div class="caption-line">${line1.join(" ")}</div>`);
-      lines.push(`<div class="caption-line">${line2.join(" ")}</div>`);
+        wordSpans.forEach((span, i) => {
+          span.classList.toggle("visible", i >= wordInBlock && i < wordInBlock + 3);
+          span.classList.toggle("highlighted", i === wordInBlock);
+        });
+      };
 
-      return lines.join("");
+      currentUtterance.onend = () => {
+        line1.innerHTML = "";
+        line2.innerHTML = "";
+      };
+
+      speechSynthesis.speak(currentUtterance);
     }
   </script>
 
