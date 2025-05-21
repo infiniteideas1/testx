@@ -36,22 +36,23 @@
     #caption {
       position: absolute;
       bottom: 10%;
-      left: 0;
-      width: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
       text-align: center;
       font-weight: bold;
       color: white;
       text-shadow: 2px 2px 6px black;
       pointer-events: none;
       line-height: 1.4em;
-      padding: 0 10px;
+      font-size: 3vw;
       box-sizing: border-box;
-      font-size: 2vw;
     }
 
     .word {
       opacity: 0;
       transition: opacity 0.3s;
+      display: inline-block;
     }
 
     .visible {
@@ -60,6 +61,12 @@
 
     .highlighted {
       color: yellow;
+    }
+
+    /* Ensure the words break properly into two lines */
+    .caption-line {
+      display: inline-block;
+      white-space: normal;
     }
   </style>
 </head>
@@ -85,13 +92,14 @@
 
     let words = [];
 
+    // Function to start the karaoke caption display
     function start() {
       const fullText = textInput.value.trim();
       if (!fullText) return alert("Please enter a caption.");
 
       speechSynthesis.cancel();
       words = fullText.split(/\s+/);
-      caption.innerHTML = words.map((word, i) => `<span id="word-${i}" class="word">${word}</span>`).join(" ");
+      caption.innerHTML = createCaptionHTML(words);  // Create the HTML structure for captions
 
       const utterance = new SpeechSynthesisUtterance(fullText);
       utterance.rate = 1;
@@ -106,8 +114,8 @@
         words.forEach((_, i) => {
           const wordEl = document.getElementById(`word-${i}`);
           if (wordEl) {
-            wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 3);
-            wordEl.classList.toggle("highlighted", i === currentWordIndex);
+            wordEl.classList.toggle("visible", i >= currentWordIndex && i < currentWordIndex + 4); // Show 3-4 words
+            wordEl.classList.toggle("highlighted", i === currentWordIndex); // Highlight the current word
           }
         });
       };
@@ -123,6 +131,33 @@
 
       speechSynthesis.speak(utterance);
     }
+
+    // Function to create the caption HTML structure
+    function createCaptionHTML(words) {
+      let lines = [];
+      let line = [];
+      let wordCount = 0;
+
+      words.forEach((word, index) => {
+        line.push(`<span id="word-${index}" class="word">${word}</span>`);
+        wordCount++;
+        
+        // Break into a new line after every 4 words (you can adjust this number)
+        if (wordCount >= 4) {
+          lines.push(`<div class="caption-line">${line.join(" ")}</div>`);
+          line = [];
+          wordCount = 0;
+        }
+      });
+
+      // Push any remaining words that didn't fill a line
+      if (line.length) {
+        lines.push(`<div class="caption-line">${line.join(" ")}</div>`);
+      }
+
+      return lines.join(" ");
+    }
+
   </script>
 
 </body>
