@@ -1,179 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>   
+<head>
   <meta charset="UTF-8" />
-  <title>Fixed 2-Line Karaoke Captions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ruffy's World 🌍</title>
   <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+    }
+
     body {
-      margin: 0;
-      background: #000;
-      font-family: sans-serif;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #d8b4fe, #a78bfa);
+      color: #333;
+      scroll-behavior: smooth;
+    }
+
+    header {
+      background: #6b21a8;
+      padding: 1rem;
+      text-align: center;
       color: white;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+
+    .section {
+      padding: 2rem;
+      text-align: center;
+    }
+
+    h2 {
+      color: #6b21a8;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: white;
+      margin: 2rem auto;
+      padding: 2rem;
+      border-radius: 15px;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card img {
+      width: 120px;
+      border-radius: 50%;
+      border: 4px solid #a78bfa;
+      margin-bottom: 1rem;
+    }
+
+    .info p {
+      font-size: 1rem;
+      margin: 0.3rem 0;
+    }
+
+    .btn {
+      margin-top: 1rem;
+      padding: 0.7rem 1.2rem;
+      background-color: #9333ea;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #7e22ce;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      max-width: 300px;
+      text-align: center;
+      animation: zoomIn 0.4s ease;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .gallery {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .gallery img {
+      width: 150px;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .gallery img:hover {
+      transform: scale(1.05);
+    }
+
+    form {
+      max-width: 400px;
+      margin: auto;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      height: 100vh;
-      justify-content: center;
+      gap: 1rem;
     }
 
-    .controls {
-      margin: 20px;
+    input, textarea {
+      padding: 0.7rem;
+      font-size: 1rem;
+      border-radius: 10px;
+      border: 1px solid #ccc;
     }
 
-    .container {
-      position: relative;
-      width: 80%;
-      max-width: 800px;
-      aspect-ratio: 16 / 9;
-      background: black;
-      overflow: hidden;
+    input:focus, textarea:focus {
+      outline: 2px solid #9333ea;
     }
 
-    video {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    #caption {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 70%;
+    footer {
       text-align: center;
-      font-weight: bold;
-      color: white;
-      text-shadow: 2px 2px 6px black;
-      pointer-events: none;
-      line-height: 1.4em;
-      font-size: 5vw;
-      z-index: 10;
+      color: #6b21a8;
+      padding: 2rem 1rem;
+      font-size: 0.9rem;
     }
 
-    .caption-line {
-      display: block;
-      height: 1.5em;
-    }
+    @media (max-width: 500px) {
+      .card, form {
+        width: 90%;
+      }
 
-    .word {
-      opacity: 0;
-      transition: opacity 0.3s;
-      display: inline-block;
-    }
-
-    .visible {
-      opacity: 1;
-    }
-
-    .highlighted {
-      color: yellow;
+      .gallery img {
+        width: 100px;
+        height: 100px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <h1>2-Line Centered Captions</h1>
-  <div class="controls">
-    <input type="text" id="textInput" placeholder="Enter your caption..." size="60" />
-    <button onclick="start()">Play Karaoke</button>
-  </div>
+  <header>
+    🌸 Welcome to Ruffy's World!
+  </header>
 
-  <div class="container">
-    <video id="video" autoplay muted loop>
-      <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-    </video>
-    <div id="caption">
-      <div class="caption-line" id="line1"></div>
-      <div class="caption-line" id="line2"></div>
+<div class="card">
+  <img src="https://images.pexels.com/photos/3769023/pexels-photo-3769023.jpeg?auto=compress&cs=tinysrgb&h=120" alt="Ruffy's Profile Photo">
+
+  <h1>Rufaidah Saidu Dahiru Muhammad</h1>
+  <h2>(Ruffy)</h2>
+  <div class="info">
+    <p><strong>Age:</strong> 13</p>
+    <p><strong>Birthday:</strong> 06/04/2012</p>
+    <p><strong>Location:</strong> Kaduna</p>
+    <p><strong>Color:</strong> Violet 💜</p>
+  </div>
+  <button class="btn" onclick="openModal()">More About Me</button>
+</div>
+
+
+
+
+  <!-- Modal -->
+  <div class="modal" id="myModal">
+    <div class="modal-content">
+      <h2>Hello! 👋</h2>
+      <p>I’m Ruffy, a young creative girl from Kaduna. I love art, science, tech and making cool websites like this!</p>
+      <button class="btn" onclick="closeModal()">Close</button>
     </div>
   </div>
 
+  <!-- Hobbies Section -->
+  <section class="section" id="hobbies">
+    <h2>🎯 My Hobbies</h2>
+    <p>Drawing ✍️ | Coding 💻 | Reading 📚 | Learning new things 🧠 | Exploring nature 🌿</p>
+  </section>
+
+  <!-- Gallery Section -->
+ <section class="section" id="gallery">
+  <h2>📸 My Gallery</h2>
+  <div class="gallery">
+    <img src="https://images.pexels.com/photos/4145193/pexels-photo-4145193.jpeg?auto=compress&cs=tinysrgb&h=150" alt="Drawing Art">
+    <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&h=150" alt="Coding on Laptop">
+    <img src="https://images.pexels.com/photos/207983/pexels-photo-207983.jpeg?auto=compress&cs=tinysrgb&h=150" alt="Playing Games">
+    <img src="https://images.pexels.com/photos/3225517/pexels-photo-3225517.jpeg?auto=compress&cs=tinysrgb&h=150" alt="Smiling Girl">
+  </div>
+</section>
+
+
+
+  <!-- Contact Section -->
+  <section class="section" id="contact">
+    <h2>📬 Contact Me</h2>
+    <form onsubmit="handleSubmit(event)">
+      <input type="text" id="name" placeholder="Your Name" required>
+      <input type="email" id="email" placeholder="Your Email" required>
+      <textarea id="message" rows="4" placeholder="Your Message" required></textarea>
+      <button class="btn" type="submit">Send Message</button>
+      <p id="formMessage" style="color: green; font-weight: bold;"></p>
+    </form>
+  </section>
+
+  <footer>
+    © 2025 Ruffy’s World. Made with 💜 in Kaduna
+  </footer>
+
   <script>
-    const textInput = document.getElementById("textInput");
-    const line1 = document.getElementById("line1");
-    const line2 = document.getElementById("line2");
+    function openModal() {
+      document.getElementById("myModal").style.display = "flex";
+    }
 
-    let words = [];
-    let blockIndex = 0;
-    let currentUtterance;
-    let currentWordIndex = 0;
-    let wordSpans = [];
+    function closeModal() {
+      document.getElementById("myModal").style.display = "none";
+    }
 
-    function splitIntoBlocks(words, size = 6) {
-      const blocks = [];
-      for (let i = 0; i < words.length; i += size) {
-        blocks.push(words.slice(i, i + size));
+    window.onclick = function(event) {
+      const modal = document.getElementById("myModal");
+      if (event.target == modal) {
+        modal.style.display = "none";
       }
-      return blocks;
     }
 
-    function renderBlock(blockWords, offset) {
-      line1.innerHTML = "";
-      line2.innerHTML = "";
-
-      wordSpans = [];
-
-      blockWords.forEach((word, i) => {
-        const span = document.createElement("span");
-        span.textContent = word + " ";
-        span.id = `word-${offset + i}`;
-        span.className = "word";
-        if (i < 3) {
-          line1.appendChild(span);
-        } else {
-          line2.appendChild(span);
-        }
-        wordSpans.push(span);
-      });
-    }
-
-    function start() {
-      const fullText = textInput.value.trim();
-      if (!fullText) return alert("Please enter a caption.");
-
-      if (speechSynthesis.speaking) speechSynthesis.cancel();
-
-      words = fullText.split(/\s+/);
-      const blocks = splitIntoBlocks(words, 6);
-      blockIndex = 0;
-      currentWordIndex = 0;
-
-      renderBlock(blocks[0], 0);
-
-      currentUtterance = new SpeechSynthesisUtterance(fullText);
-      currentUtterance.rate = 1;
-      currentUtterance.lang = 'en-US';
-
-      currentUtterance.onboundary = function(event) {
-        if (event.name !== "word") return;
-
-        const spokenText = fullText.slice(0, event.charIndex);
-        const wordIndex = spokenText.trim().split(/\s+/).length - 1;
-        currentWordIndex = wordIndex;
-
-        const currentBlock = Math.floor(wordIndex / 6);
-        const blockOffset = currentBlock * 6;
-        const wordInBlock = wordIndex % 6;
-
-        if (currentBlock !== blockIndex && currentBlock < blocks.length) {
-          blockIndex = currentBlock;
-          renderBlock(blocks[blockIndex], blockOffset);
-        }
-
-        wordSpans.forEach((span, i) => {
-          span.classList.toggle("visible", i >= wordInBlock && i < wordInBlock + 3);
-          span.classList.toggle("highlighted", i === wordInBlock);
-        });
-      };
-
-      currentUtterance.onend = () => {
-        line1.innerHTML = "";
-        line2.innerHTML = "";
-      };
-
-      speechSynthesis.speak(currentUtterance);
+    function handleSubmit(event) {
+      event.preventDefault();
+      const name = document.getElementById("name").value;
+      document.getElementById("formMessage").textContent = `Thank you, ${name}! Your message has been sent! 🎉`;
+      event.target.reset();
     }
   </script>
 
