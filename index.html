@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Upload Photo to Supabase</title>
+  <title>Upload Photos to Supabase</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body {
@@ -45,7 +45,7 @@
   <button onclick="upload()">Upload</button>
 
   <div id="progress"><div id="bar"></div></div>
-  <p id="status"></p>
+  <p id="status" style="white-space: pre-wrap;"></p>
   <div id="preview"></div>
 
   <script>
@@ -60,6 +60,10 @@
       const bar = document.getElementById('bar');
       const preview = document.getElementById('preview');
 
+      status.textContent = '';
+      bar.style.width = '0%';
+      preview.innerHTML = '';
+
       if (!file) {
         alert("Please select a photo.");
         return;
@@ -67,14 +71,13 @@
 
       const fileName = Date.now() + '_' + file.name;
       const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${fileName}`;
-      
+
       const xhr = new XMLHttpRequest();
       xhr.open('POST', uploadUrl, true);
       xhr.setRequestHeader('Authorization', `Bearer ${SUPABASE_KEY}`);
       xhr.setRequestHeader('Content-Type', file.type);
       xhr.setRequestHeader('x-upsert', 'true');
 
-      // Progress bar logic
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           const percent = (e.loaded / e.total) * 100;
@@ -84,16 +87,18 @@
 
       xhr.onload = function () {
         if (xhr.status === 200 || xhr.status === 204) {
-          status.textContent = "✅ Upload successful!";
           const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${fileName}`;
+          status.textContent = "✅ Upload successful!";
           preview.innerHTML = `<img src="${publicUrl}" alt="Uploaded photo"><br><a href="${publicUrl}" target="_blank">${publicUrl}</a>`;
         } else {
-          status.textContent = "❌ Upload failed.";
+          console.error("Upload failed:", xhr.status, xhr.responseText);
+          status.innerHTML = `❌ Upload failed:\n${xhr.status} - ${xhr.responseText}`;
         }
       };
 
       xhr.onerror = function () {
-        status.textContent = "❌ Upload error.";
+        console.error("Network error:", xhr.status, xhr.responseText);
+        status.innerHTML = `❌ Network error:\n${xhr.status} - ${xhr.responseText}`;
       };
 
       xhr.send(file);
